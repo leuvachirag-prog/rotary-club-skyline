@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: check if the requester is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Helper: get user document
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Helper: check if user is super_admin
+    function isSuperAdmin() {
+      return isAuth() && getUserData().role == 'super_admin';
+    }
+
+    // Helper: check if user is any admin
+    function isAdmin() {
+      return isAuth() && getUserData().role in ['super_admin', 'sub_admin'];
+    }
+
+    // Helper: check if sub_admin has access to a module
+    function hasModuleAccess(module) {
+      let userData = getUserData();
+      return userData.role == 'super_admin' ||
+             (userData.role == 'sub_admin' && module in userData.moduleAccess);
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.auth.uid == userId;
+      allow update: if isAuth() && (request.auth.uid == userId || isSuperAdmin());
+      allow delete: if isSuperAdmin();
+    }
+
+    // Members collection
+    match /members/{memberId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth() && hasModuleAccess('membership');
+      allow delete: if isAuth() && hasModuleAccess('membership');
+    }
+
+    // Forms collection
+    match /forms/{formId} {
+      allow read: if true; // Public forms can be read by anyone
+      allow create, update, delete: if isAuth() && hasModuleAccess('events_forms');
+    }
+
+    // Form submissions
+    match /formSubmissions/{submissionId} {
+      allow read: if isAuth() && hasModuleAccess('events_forms');
+      allow create: if true; // Anyone can submit a form
+    }
+
+    // Events collection
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if isAuth() && hasModuleAccess('events_forms');
+    }
+
+    // Transactions collection
+    match /transactions/{transactionId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAuth() && hasModuleAccess('transactions');
+    }
+
+    // Announcements collection
+    match /announcements/{announcementId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAuth() && hasModuleAccess('announcements');
+    }
+
+    // Polls collection
+    match /polls/{pollId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAuth() && hasModuleAccess('polls');
+
+      // Allow members to vote (update their vote)
+      allow update: if isAuth() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes', 'totalVotes']);
+    }
+
+    // Wall posts collection
+    match /wallPosts/{postId} {
+      allow read: if isAuth();
+      allow create: if isAuth(); // Any member can create
+      allow update, delete: if isAuth() && (hasModuleAccess('wall') || resource.data.userId == request.auth.uid);
+    }
+
+    // Suggestions collection
+    match /suggestions/{suggestionId} {
+      allow read: if isAuth() && (hasModuleAccess('suggestions') || resource.data.userId == request.auth.uid);
+      allow create: if isAuth();
+      allow update: if isAuth() && hasModuleAccess('suggestions');
+      allow delete: if isAuth() && hasModuleAccess('suggestions');
+    }
+
+    // Club settings (about club info)
+    match /settings/{settingId} {
+      allow read: if true; // Public info
+      allow write: if isAuth() && hasModuleAccess('about_club');
+    }
+
+    // Birthday wishes
+    match /wishes/{wishId} {
+      allow read: if isAuth();
+      allow write: if isAuth() && hasModuleAccess('wishes');
+    }
+  }
+}

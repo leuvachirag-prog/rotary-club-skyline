@@ -1,0 +1,235 @@
+"use client";
+
+import { useState, useEffect, use } from "react";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Plus, Trash2, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
+import Link from "next/link";
+
+type FieldType = "text" | "email" | "phone" | "number" | "date" | "textarea" | "select" | "checkbox" | "radio" | "file" | "image";
+
+interface FormField {
+  id: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  placeholder: string;
+  options: string[];
+}
+
+const fieldTypes: { value: FieldType; label: string }[] = [
+  { value: "text", label: "Text" },
+  { value: "email", label: "Email" },
+  { value: "phone", label: "Phone" },
+  { value: "number", label: "Number" },
+  { value: "date", label: "Date" },
+  { value: "textarea", label: "Long Text" },
+  { value: "select", label: "Dropdown" },
+  { value: "checkbox", label: "Checkboxes" },
+  { value: "radio", label: "Radio Buttons" },
+  { value: "file", label: "File Upload" },
+  { value: "image", label: "Image Upload" },
+];
+
+export default function EditFormPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [formType, setFormType] = useState("general");
+  const [status, setStatus] = useState<"active" | "inactive">("active");
+  const [fields, setFields] = useState<FormField[]>([]);
+
+  useEffect(() => {
+    loadForm();
+  }, [id]);
+
+  const loadForm = async () => {
+    try {
+      const docSnap = await getDoc(doc(db, "forms", id));
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setTitle(data.title || "");
+        setDescription(data.description || "");
+        setFormType(data.type || "general");
+        setStatus(data.status || "active");
+        setFields(data.fields || []);
+      }
+    } catch (error) {
+      console.error("Error loading form:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addField = () => {
+    setFields((prev) => [...prev, { id: `field_${Date.now()}`, label: "", type: "text", required: false, placeholder: "", options: [] }]);
+  };
+
+  const updateField = (index: number, updates: Partial<FormField>) => {
+    setFields((prev) => prev.map((f, i) => (i === index ? { ...f, ...updates } : f)));
+  };
+
+  const removeField = (index: number) => {
+    setFields((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const moveField = (index: number, direction: "up" | "down") => {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= fields.length) return;
+    const newFields = [...fields];
+    [newFields[index], newFields[newIndex]] = [newFields[newIndex], newFields[index]];
+    setFields(newFields);
+  };
+
+  const addOption = (fieldIndex: number) => {
+    const field = fields[fieldIndex];
+    updateField(fieldIndex, { options: [...field.options, ""] });
+  };
+
+  const updateOption = (fieldIndex: number, optionIndex: number, value: string) => {
+    const field = fields[fieldIndex];
+    const newOptions = [...field.options];
+    newOptions[optionIndex] = value;
+    updateField(fieldIndex, { options: newOptions });
+  };
+
+  const removeOption = (fieldIndex: number, optionIndex: number) => {
+    const field = fields[fieldIndex];
+    updateField(fieldIndex, { options: field.options.filter((_, i) => i !== optionIndex) });
+  };
+
+  const hasOptions = (type: FieldType) => ["select", "checkbox", "radio"].includes(type);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (fields.length === 0) {
+      alert("Please add at least one field.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, "forms", id), { title, description, type: formType, status, fields });
+      router.push("/admin/forms");
+    } catch (error) {
+      console.error("Error updating form:", error);
+      alert("Error updating form.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-12"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" /></div>;
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-4 mb-6">
+        <Link href="/admin/forms"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /></Button></Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Edit Form</h1>
+          <p className="text-gray-600">{title}</p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardHeader><CardTitle>Form Details</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <Input id="title" label="Form Title *" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Form Type</label>
+                <select value={formType} onChange={(e) => setFormType(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                  <option value="registration">Registration</option>
+                  <option value="event">Event</option>
+                  <option value="survey">Survey</option>
+                  <option value="feedback">Feedback</option>
+                  <option value="general">General</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select value={status} onChange={(e) => setStatus(e.target.value as "active" | "inactive")} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Form Fields ({fields.length})</CardTitle>
+              <Button type="button" onClick={addField}><Plus className="w-4 h-4 mr-2" /> Add Field</Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {fields.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No fields. Click &quot;Add Field&quot; to start.</div>
+            ) : (
+              <div className="space-y-4">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <GripVertical className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-medium text-gray-500">Field {index + 1}</span>
+                      <div className="ml-auto flex items-center gap-1">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => moveField(index, "up")} disabled={index === 0}><ChevronUp className="w-4 h-4" /></Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => moveField(index, "down")} disabled={index === fields.length - 1}><ChevronDown className="w-4 h-4" /></Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeField(index)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Input placeholder="Field Label *" value={field.label} onChange={(e) => updateField(index, { label: e.target.value })} required />
+                      <select value={field.type} onChange={(e) => updateField(index, { type: e.target.value as FieldType })} className="px-3 py-2 border border-gray-300 rounded-md text-sm">
+                        {fieldTypes.map((ft) => <option key={ft.value} value={ft.value}>{ft.label}</option>)}
+                      </select>
+                      <div className="flex items-center gap-4">
+                        <Input placeholder="Placeholder" value={field.placeholder} onChange={(e) => updateField(index, { placeholder: e.target.value })} />
+                        <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input type="checkbox" checked={field.required} onChange={(e) => updateField(index, { required: e.target.checked })} className="w-4 h-4 rounded" />
+                          Required
+                        </label>
+                      </div>
+                    </div>
+                    {hasOptions(field.type) && (
+                      <div className="mt-3 pl-4 border-l-2 border-primary/20">
+                        <p className="text-sm font-medium text-gray-600 mb-2">Options</p>
+                        {field.options.map((opt, optIdx) => (
+                          <div key={optIdx} className="flex items-center gap-2 mb-2">
+                            <Input placeholder={`Option ${optIdx + 1}`} value={opt} onChange={(e) => updateOption(index, optIdx, e.target.value)} />
+                            <Button type="button" variant="ghost" size="sm" onClick={() => removeOption(index, optIdx)}><Trash2 className="w-3 h-3 text-red-400" /></Button>
+                          </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => addOption(index)}><Plus className="w-3 h-3 mr-1" /> Add Option</Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="flex gap-4">
+          <Button type="submit" size="lg" disabled={saving}>{saving ? "Saving..." : "Update Form"}</Button>
+          <Link href="/admin/forms"><Button type="button" variant="outline" size="lg">Cancel</Button></Link>
+        </div>
+      </form>
+    </div>
+  );
+}

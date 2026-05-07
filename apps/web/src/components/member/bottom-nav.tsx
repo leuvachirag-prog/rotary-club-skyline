@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, CalendarDays, ImageIcon, User } from "lucide-react";
+import { LayoutDashboard, FileText, CalendarDays, ImageIcon, User, Info } from "lucide-react";
 
 const navItems = [
   { label: "Home", href: "/member/dashboard", icon: LayoutDashboard },
-  { label: "Forms", href: "/member/forms", icon: FileText },
   { label: "Events", href: "/member/events", icon: CalendarDays },
   { label: "Wall", href: "/member/wall", icon: ImageIcon },
+  { label: "About", href: "/member/about", icon: Info },
   { label: "Profile", href: "/member/profile", icon: User },
 ];
 

@@ -35,7 +35,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Members", href: "/admin/members", icon: Users, module: "membership" },
-  { label: "Events & Forms", href: "/admin/forms", icon: FileText, module: "events_forms" },
+  { label: "Events", href: "/admin/events", icon: CalendarDays, module: "events_forms" },
+  { label: "Forms", href: "/admin/forms", icon: FileText, module: "events_forms" },
   { label: "Transactions", href: "/admin/transactions", icon: IndianRupee, module: "transactions" },
   { label: "Announcements", href: "/admin/announcements", icon: Megaphone, module: "announcements" },
   { label: "Birthday & Wishes", href: "/admin/wishes", icon: Cake, module: "wishes" },
