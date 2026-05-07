@@ -6,7 +6,7 @@ import { db } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, CalendarDays, MapPin, Clock } from "lucide-react";
+import { Plus, Trash2, Pencil, CalendarDays, MapPin, Clock } from "lucide-react";
 import Link from "next/link";
 
 interface Event {
@@ -101,9 +101,14 @@ export default function EventsPage() {
                       </div>
                       {event.formId && <p className="text-xs text-primary mt-2">Registration form linked</p>}
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(event.id)}>
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Link href={`/admin/events/${event.id}/edit`}>
+                        <Button variant="ghost" size="sm"><Pencil className="w-4 h-4 text-gray-500" /></Button>
+                      </Link>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(event.id)}>
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </div>

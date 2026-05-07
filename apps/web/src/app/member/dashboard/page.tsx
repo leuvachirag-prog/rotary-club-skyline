@@ -6,7 +6,7 @@ import { db } from "@/lib/firebase";
 import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Megaphone, CalendarDays, BarChart3 } from "lucide-react";
+import { FileText, Megaphone, CalendarDays, BarChart3, Info, MessageSquare } from "lucide-react";
 import Link from "next/link";
 
 interface Announcement {
@@ -53,7 +53,7 @@ export default function MemberDashboard() {
         <p className="text-gray-600">Rotary Club of Ahmedabad Skyline</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-3 gap-3 mb-6">
         <Link href="/member/forms">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="flex flex-col items-center py-5">
@@ -71,6 +71,14 @@ export default function MemberDashboard() {
             </CardContent>
           </Card>
         </Link>
+        <Link href="/member/announcements">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="flex flex-col items-center py-5">
+              <Megaphone className="w-8 h-8 text-red-500 mb-2" />
+              <span className="text-sm font-medium">Notices</span>
+            </CardContent>
+          </Card>
+        </Link>
         <Link href="/member/wall">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="flex flex-col items-center py-5">
@@ -84,6 +92,14 @@ export default function MemberDashboard() {
             <CardContent className="flex flex-col items-center py-5">
               <BarChart3 className="w-8 h-8 text-orange-600 mb-2" />
               <span className="text-sm font-medium">Polls</span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/member/suggestions">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="flex flex-col items-center py-5">
+              <MessageSquare className="w-8 h-8 text-teal-600 mb-2" />
+              <span className="text-sm font-medium">Feedback</span>
             </CardContent>
           </Card>
         </Link>
