@@ -12,8 +12,10 @@ import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
   const router = useRouter();
+  const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
     password: "",
@@ -48,20 +50,35 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       const result = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      await updateProfile(result.user, { displayName: formData.name });
+      await updateProfile(result.user, { displayName: fullName });
 
       await setDoc(doc(db, "users", result.user.uid), {
-        displayName: formData.name,
+        displayName: fullName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
         role: "member",
         moduleAccess: [],
         status: "pending",
+        profileCompletion: 20,
         createdAt: new Date().toISOString(),
       });
 
-      router.push("/member/dashboard");
+      await setDoc(doc(db, "members", result.user.uid), {
+        displayName: fullName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        status: "pending",
+        profileCompletion: 20,
+        createdAt: new Date().toISOString(),
+      });
+
+      setSuccess(true);
     } catch (err: unknown) {
       if (err instanceof Error && err.message.includes("email-already-in-use")) {
         setError("This email is already registered.");
@@ -84,6 +101,20 @@ export default function SignupPage() {
           <p className="text-lg text-primary font-semibold">Skyline</p>
         </div>
 
+        {success ? (
+          <Card>
+            <CardContent className="text-center py-10">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-green-600 text-2xl">✓</span>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Registration Submitted!</h2>
+              <p className="text-gray-600 mb-4">Your registration has been sent to the club admin for approval. You will be able to log in once approved.</p>
+              <Link href="/auth/login">
+                <Button variant="outline">Back to Login</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : (
         <Card>
           <CardHeader>
             <CardTitle className="text-center">Member Registration</CardTitle>
@@ -96,15 +127,26 @@ export default function SignupPage() {
                 </div>
               )}
 
-              <Input
-                id="name"
-                name="name"
-                label="Full Name"
-                placeholder="Enter your full name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  id="firstName"
+                  name="firstName"
+                  label="First Name"
+                  placeholder="First name"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                />
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  label="Last Name"
+                  placeholder="Last name"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
 
               <Input
                 id="email"
@@ -163,6 +205,7 @@ export default function SignupPage() {
             </p>
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   );

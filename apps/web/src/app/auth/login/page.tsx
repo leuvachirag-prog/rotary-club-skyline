@@ -32,6 +32,16 @@ export default function LoginPage() {
       const userDoc = await getDoc(doc(db, "users", result.user.uid));
       const userData = userDoc.data();
 
+      if (userData?.status === "pending") {
+        setError("Your registration is pending admin approval. Please wait for the admin to approve your account.");
+        return;
+      }
+
+      if (userData?.status === "rejected") {
+        setError("Your registration has been rejected. Please contact the club admin.");
+        return;
+      }
+
       if (userData?.role === "super_admin" || userData?.role === "sub_admin") {
         router.push("/admin/dashboard");
       } else {

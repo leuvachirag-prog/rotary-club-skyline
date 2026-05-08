@@ -7,6 +7,7 @@ import { useAuthStore, type ModuleAccess } from "@/store/auth-store";
 import {
   LayoutDashboard,
   Users,
+  UserPlus,
   FileText,
   CalendarDays,
   IndianRupee,
@@ -34,6 +35,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Registrations", href: "/admin/registrations", icon: UserPlus, module: "membership" },
   { label: "Members", href: "/admin/members", icon: Users, module: "membership" },
   { label: "Events", href: "/admin/events", icon: CalendarDays, module: "events_forms" },
   { label: "Forms", href: "/admin/forms", icon: FileText, module: "events_forms" },
